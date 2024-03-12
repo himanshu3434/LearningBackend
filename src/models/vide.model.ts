@@ -10,6 +10,8 @@ interface Ivideo extends Document {
   duration: number;
   views: number;
   isPublished: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const VideoSchema = new Schema({

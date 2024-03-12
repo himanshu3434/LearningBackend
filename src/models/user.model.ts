@@ -16,6 +16,8 @@ interface Iuser extends Document {
   password: string;
   refreshToken: string;
   watchHistory: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 const userSchema = new Schema(
   {
