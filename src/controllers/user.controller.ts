@@ -1,10 +1,23 @@
 import { User } from "../models/user.model.js";
+import { CustomRequest } from "../types/types.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { fileUploadHandler } from "../utils/fileUpload.js";
+import { Types } from "mongoose";
 type filesMulter = { [fieldname: string]: Express.Multer.File[] };
+const generateAccessAndRefreshTokesn = async (userId: Types.ObjectId) => {
+  const user = await User.findById(userId);
+  console.log(user);
+  const accessToken = user?.generateAccessTokens();
+  const refreshToken = user?.generateRefreshTokens();
+  if (user) {
+    user.refreshToken = refreshToken || "";
+    await user.save({ validateBeforeSave: false });
+  }
 
+  return { accessToken, refreshToken };
+};
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
 
@@ -65,5 +78,74 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new apiResponse(200, newUser, "User Registered Successfully"));
 });
+const loginUser = asyncHandler(async (req, res) => {
+  const { username, email, password } = req.body;
 
-export { registerUser };
+  if (!username && !email) {
+    throw new apiError(400, " provide any of the two username or password");
+  }
+
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!user) throw new apiError(404, "User Not found");
+
+  const passwordValid = user.isPasswordCorrect(password);
+
+  if (!passwordValid) throw new apiError(401, "User Unauthorized");
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokesn(
+    user._id
+  );
+  const finalUser = await User.findById(user._id).select(
+    "-password  -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new apiResponse(
+        200,
+        { user: finalUser, accessToken, refreshToken },
+        "User Logged In SuccessFully"
+      )
+    );
+});
+
+const logoutUser = asyncHandler(async (req: CustomRequest, res) => {
+  const user = req.user;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    user?._id,
+    {
+      $unset: {
+        refreshToken: 1,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(
+      new apiResponse(200, { loggedOut: true }, "User logged Out SuccessFully")
+    );
+});
+export { registerUser, loginUser, logoutUser };

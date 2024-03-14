@@ -1,24 +1,13 @@
 import mongoose, { Schema, Types } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import { Iuser } from "../types/types.js";
 //error facing in index:true in username
 /*
 the problem is that it is taking all type as array 
  in username
 */
-interface Iuser extends Document {
-  username: string;
-  email: string;
-  fullName: string;
-  avatar: string;
-  coverImage?: string;
-  password: string;
-  refreshToken: string;
-  watchHistory: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 const userSchema = new Schema(
   {
     username: {
@@ -69,7 +58,7 @@ userSchema.pre("save", async function (next) {
   }
   //temp fix by if see other sol
   //   if (this.password == null || this.password == undefined) return next();
-  if (this.password) bcrypt.hash(this.password, 10);
+  if (this.password) this.password = await bcrypt.hash(this.password, 10);
 
   next();
 });
