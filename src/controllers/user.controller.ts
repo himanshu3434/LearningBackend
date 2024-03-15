@@ -24,6 +24,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
 
   //check if any field is empty
+
   if (
     [fullName, username, email, password].some((field) => field?.trim() === "")
   ) {
@@ -37,7 +38,9 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existingUser)
     throw new apiError(409, "user with username or email already exist ");
 
+  console.log("here 1", req.files);
   const localFilePathAvatar = (req.files as filesMulter)?.avatar[0]?.path;
+  console.log("here 2");
 
   let localFilePathcoverImage, coverImage;
 
@@ -94,7 +97,7 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user) throw new apiError(404, "User Not found");
 
   const passwordValid = user.isPasswordCorrect(password);
-
+  // console.log("password ", passwordValid);
   if (!passwordValid) throw new apiError(401, "User Unauthorized");
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokesn(
@@ -185,4 +188,30 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       )
     );
 });
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+
+const changeCurrentPassword = asyncHandler(async (req: CustomRequest, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword)
+    throw new apiError(404, "oldPassword or newPassword field is empty");
+
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new apiError(404, "User Not Found ");
+  const checkedPassword = user.isPasswordCorrect(oldPassword);
+  if (!checkedPassword) throw new apiError(401, "Password is invalid");
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  res
+    .status(200)
+    .json(new apiResponse(200, {}, "Password Changed SuccessFully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+};
