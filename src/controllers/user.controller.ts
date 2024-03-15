@@ -208,10 +208,36 @@ const changeCurrentPassword = asyncHandler(async (req: CustomRequest, res) => {
     .json(new apiResponse(200, {}, "Password Changed SuccessFully"));
 });
 
+const changeAccountDetail = asyncHandler(async (req: CustomRequest, res) => {
+  const { fullName, email } = req.body;
+  if (!fullName || !email)
+    throw new apiError(404, "The updation field is empty");
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName,
+        email,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password -refreshToken");
+
+  if (!updatedUser)
+    throw new apiError(500, "internal Server error While updating to database");
+
+  res
+    .status(200)
+    .json(new apiResponse(200, {}, "All Details Updated Successfull"));
+});
 export {
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
   changeCurrentPassword,
+  changeAccountDetail,
 };
