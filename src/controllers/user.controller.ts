@@ -233,6 +233,10 @@ const changeAccountDetail = asyncHandler(async (req: CustomRequest, res) => {
     .status(200)
     .json(new apiResponse(200, {}, "All Details Updated Successfull"));
 });
+
+const getCurrentUser = asyncHandler(async (req: CustomRequest, res) => {
+  res.status(200).json(new apiResponse(200, { user: req.user }, "User Data"));
+});
 export {
   registerUser,
   loginUser,
@@ -240,4 +244,5 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   changeAccountDetail,
+  getCurrentUser,
 };
