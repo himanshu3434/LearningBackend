@@ -38,9 +38,9 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existingUser)
     throw new apiError(409, "user with username or email already exist ");
 
-  console.log("here 1", req.files);
+  //console.log("here 1", req.files);
   const localFilePathAvatar = (req.files as filesMulter)?.avatar[0]?.path;
-  console.log("here 2");
+  // console.log("here 2");
 
   let localFilePathcoverImage, coverImage;
 
@@ -237,6 +237,66 @@ const changeAccountDetail = asyncHandler(async (req: CustomRequest, res) => {
 const getCurrentUser = asyncHandler(async (req: CustomRequest, res) => {
   res.status(200).json(new apiResponse(200, { user: req.user }, "User Data"));
 });
+
+const updateUserAvator = asyncHandler(async (req: CustomRequest, res) => {
+  const localAvatarFilePath = req.file?.path;
+  // console.log(localAvatarFilePath);
+  // console.log((req.files as filesMulter)?.avatar[0]?.path);
+  if (!localAvatarFilePath) throw new apiError(404, "Avatar not Found ");
+
+  const avatar = await fileUploadHandler(localAvatarFilePath);
+  if (!avatar?.url)
+    throw new apiError(
+      500,
+      "Internal Server Error While Uploading the Image to Cloud"
+    );
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user)
+    throw new apiError(500, "Failed to update the avatar Database Error ");
+
+  res
+    .status(200)
+    .json(new apiResponse(200, { user: user }, "Avatar updated successfully"));
+});
+
+const updateUserCoverImage = asyncHandler(async (req: CustomRequest, res) => {
+  const localCoverImageFilePath = req.file?.path;
+  if (!localCoverImageFilePath) throw new apiError(404, "Avatar not Found ");
+
+  const coverImage = await fileUploadHandler(localCoverImageFilePath);
+  if (!coverImage?.url)
+    throw new apiError(
+      500,
+      "Internal Server Error While Uploading the Image to Cloud"
+    );
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user)
+    throw new apiError(500, "Failed to update the avatar Database Error ");
+
+  res
+    .status(200)
+    .json(
+      new apiResponse(200, { user: user }, "Cover Image  updated successfully")
+    );
+});
 export {
   registerUser,
   loginUser,
@@ -245,4 +305,6 @@ export {
   changeCurrentPassword,
   changeAccountDetail,
   getCurrentUser,
+  updateUserAvator,
+  updateUserCoverImage,
 };
