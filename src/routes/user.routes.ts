@@ -10,6 +10,7 @@ import {
   getCurrentUser,
   updateUserAvator,
   updateUserCoverImage,
+  getChannelProfile,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 const userRouter = Router();
@@ -35,5 +36,6 @@ userRouter
   .route("/updateCoverImage")
   .post(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 userRouter.route("/refresh-access-token").post(refreshAccessToken);
+userRouter.route("/c/:username").get(verifyJWT, getChannelProfile);
 
 export default userRouter;
